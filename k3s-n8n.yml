@@ -1,0 +1,93 @@
+# Crafted By: H.Ragul
+---
+# Depoyment manifest
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: n8n
+  labels:
+    app: n8n
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: n8n
+  template:
+    metadata:
+      labels:
+        app: n8n
+    spec:
+      containers:
+        - name: n8n
+          image: docker.n8n.io/n8nio/n8n
+          ports:
+            - containerPort: 5678
+          env:
+            - name: GENERIC_TIMEZONE
+              value: "Asia/Kolkata"
+            - name: TZ
+              value: "Asia/Kolkata"
+            - name: N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS
+              value: "true"
+            - name: N8N_RUNNERS_ENABLED
+              value: "true"
+            - name: N8N_SECURE_COOKIE
+              value: "false"
+            - name: N8N_HOST
+              value: dev.raguls.in
+            - name: WEBHOOK_URL
+              value: "http://dev.raguls.in/"
+            - name: N8N_PROTOCOL
+              value: "http"
+          volumeMounts:
+            - name: n8n-data
+              mountPath: /home/node/.n8n
+      volumes:
+        - name: n8n-data
+          hostPath:
+            path: /home/dev/n8n
+            type: DirectoryOrCreate
+
+---
+# Service manifest
+apiVersion: v1
+kind: Service
+metadata:
+  name: n8n-service
+  labels:
+    app: n8n
+spec:
+  type: ClusterIP
+  selector:
+    app: n8n
+  ports:
+    - port: 5678       # service port
+      targetPort: 5678 # container port
+      protocol: TCP
+
+---
+# Ingress manifest
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: n8n-ingress
+  annotations:
+    #traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    #traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+    - host: dev.raguls.in
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: n8n-service
+                port:
+                  number: 5678
+#tls:
+#  - hosts:
+#      - dev.raguls.in
+#    secretName: dev-raguls-in-tls
