@@ -1,0 +1,500 @@
+{
+  "name": "Authentication",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "signup",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -64,
+        -240
+      ],
+      "id": "2d861b52-5b56-495a-b41a-4121cbbb3c17",
+      "name": "signup",
+      "webhookId": "4305b870-9fac-4ae2-a406-bfe317426dec"
+    },
+    {
+      "parameters": {
+        "useJson": true,
+        "claimsJson": "={\n  \"password\": \"{{ $('signup').item.json.body.password }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.jwt",
+      "typeVersion": 1,
+      "position": [
+        640,
+        -368
+      ],
+      "id": "fca6a79b-ac92-4303-961f-7e64d6965a6e",
+      "name": "Encrypt",
+      "credentials": {
+        "jwtAuth": {
+          "id": "a961WlcmTkmJiomv",
+          "name": "JWT Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"email\": \"{{ $('signup').item.json.body.email }}\",\n  \"password\": \"{{ $json.token }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        848,
+        -368
+      ],
+      "id": "6b462cca-3388-4f3f-a58b-baa56ebb6d00",
+      "name": "Organize"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "credentials",
+        "fields": "email,password",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        1056,
+        -368
+      ],
+      "id": "fd13292f-bda9-4658-b4f8-dadafa7a05a0",
+      "name": "create",
+      "credentials": {
+        "mongoDb": {
+          "id": "RkcpR2DWrDPnkmN4",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "signin",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        304
+      ],
+      "id": "299efec9-edf0-4513-a567-30b7920c2cdb",
+      "name": "Signin",
+      "webhookId": "d66ffe1d-ed66-4fbb-ba0b-47edec8b313f"
+    },
+    {
+      "parameters": {
+        "collection": "credentials",
+        "options": {},
+        "query": "={\n  \"email\": \"{{ $json.body.email }}\"\n}"
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        208,
+        304
+      ],
+      "id": "9c31e9cc-e51f-4496-9167-3e5facfceea2",
+      "name": "Find",
+      "alwaysOutputData": true,
+      "credentials": {
+        "mongoDb": {
+          "id": "RkcpR2DWrDPnkmN4",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"failed\",\n  \"reason\": \"User doesn't exist. Please try with valid user details\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        624,
+        400
+      ],
+      "id": "a988f7c8-9405-4b36-95d9-1a2cfff96ed8",
+      "name": "NotExist"
+    },
+    {
+      "parameters": {
+        "operation": "verify",
+        "token": "={{ $json.password }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.jwt",
+      "typeVersion": 1,
+      "position": [
+        624,
+        208
+      ],
+      "id": "0f833f64-5804-49d5-a065-ef3dc294c6b7",
+      "name": "Decrypt",
+      "credentials": {
+        "jwtAuth": {
+          "id": "a961WlcmTkmJiomv",
+          "name": "JWT Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "69c4b230-385d-4f1a-854c-a61fe5df93d2",
+              "leftValue": "={{ $('Find').item.json.isNotEmpty()}}",
+              "rightValue": "false",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        304
+      ],
+      "id": "4266c4a2-9af6-4255-988f-d5f874dcee74",
+      "name": "CheckUser"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5e2cc5be-014d-4b95-bf61-5afa6e5112fa",
+              "leftValue": "={{ $json.payload.password }}",
+              "rightValue": "={{ $('Signin').item.json.body.password }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        832,
+        208
+      ],
+      "id": "17c5cff1-2817-48d5-839d-a08f075fb5a0",
+      "name": "CheckPassword"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"reason\": \"password verified successfully.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1040,
+        112
+      ],
+      "id": "2603f01d-88ba-43cb-b43f-372cb7d394c9",
+      "name": "Success"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"failed\",\n  \"reason\": \"incorrect password\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1040,
+        304
+      ],
+      "id": "a61fa92e-4425-425d-af8c-5cb96312140a",
+      "name": "Failed"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"reason\": \"User account created successfully.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1264,
+        -368
+      ],
+      "id": "40e8d02a-082e-45c4-a82e-bb7bd78647a5",
+      "name": "Response"
+    },
+    {
+      "parameters": {
+        "collection": "credentials",
+        "options": {},
+        "query": "={\n  \"email\":\"{{ $json.body.email }}\"\n}"
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        144,
+        -240
+      ],
+      "id": "5756d3cf-9a0b-40b8-a86c-9710abdea44e",
+      "name": "Exist",
+      "alwaysOutputData": true,
+      "credentials": {
+        "mongoDb": {
+          "id": "RkcpR2DWrDPnkmN4",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f16f72a6-61be-4da2-9993-b75c9196148e",
+              "leftValue": "={{ $('Exist').item.json.isEmpty()}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        352,
+        -240
+      ],
+      "id": "1c635492-a660-4132-a46a-6d8ee798301b",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"failed\",\n  \"reason\": \"user already exist\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        640,
+        -128
+      ],
+      "id": "e3c8d19a-6d2b-4591-a841-0e8d957d6006",
+      "name": "Present"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "signup": {
+      "main": [
+        [
+          {
+            "node": "Exist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Encrypt": {
+      "main": [
+        [
+          {
+            "node": "Organize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Organize": {
+      "main": [
+        [
+          {
+            "node": "create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signin": {
+      "main": [
+        [
+          {
+            "node": "Find",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find": {
+      "main": [
+        [
+          {
+            "node": "CheckUser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decrypt": {
+      "main": [
+        [
+          {
+            "node": "CheckPassword",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckUser": {
+      "main": [
+        [
+          {
+            "node": "Decrypt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "NotExist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckPassword": {
+      "main": [
+        [
+          {
+            "node": "Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exist": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Encrypt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Present",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "f2c177ce-9483-4c8d-92c7-768784599709",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "75fdb6985f838f3423c6d4119b76af9ac95e2454c3403a100d6c5350fa93f486"
+  },
+  "id": "VL7H2P06F61MRoHf",
+  "tags": []
+}
